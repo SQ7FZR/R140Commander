@@ -2,14 +2,23 @@
  * 
  * 
  * CHANGELOG 
+ * 2016.08.21 - dodanie obsługi lcd po I2C: "sketch > include libraries > manage > TWILigudCrystal
+ *         
  * 2016.08.04 - initialcode
  * 
  */
  
 //************************************************************************************************//
+// biblioteki i inicjalizacje
+#include <TWILiquidCrystal.h>
+
+uint8_t m_addr = 50;
+
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(m_addr);
+
 // zmienne i definicje
 #define DEBUG
-
 
 // definicje wejsc wyjsc
 const int band_160m = 0;                                // fizyczne wyjscie dla pasm
@@ -45,6 +54,9 @@ void setup(){
   #ifdef DEBUG
     Serial.begin(9600);
   #endif
+  Wire.begin();
+  lcd.begin(20, 4);
+  lcd.println("R140 Commander");
 }
 
 // główny program
