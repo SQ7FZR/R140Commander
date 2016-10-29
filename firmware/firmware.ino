@@ -6,16 +6,16 @@
  *         
  * 2016.08.04 - initialcode
  * 
- */
- 
+ */ 
 //************************************************************************************************//
 // biblioteki i inicjalizacje
-#include <TWILiquidCrystal.h>
+#include <Wire.h>
+#include <LiquidCrystal_PCF8574.h>
 
-uint8_t m_addr = 50;
+uint8_t m_addr = 0x3F;
 
 // initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(m_addr);
+LiquidCrystal_PCF8574 lcd(m_addr);
 
 // zmienne i definicje
 #define DEBUG
@@ -37,7 +37,6 @@ const int amp_hivoltage = 0;
 // zmienne pomocnicze
 int current_band = 1;                                   // aktualne pasmo
 int current_state = 1;                                  // tryb pracy 
-
 //************************************************************************************************//
 // funkcje pomocnicze
 void refresh_lcd(){
@@ -51,12 +50,11 @@ void change_band(){
 //************************************************************************************************//
 // odpalamy przy starcie
 void setup(){
-  #ifdef DEBUG
-    Serial.begin(9600);
-  #endif
   Wire.begin();
+  lcd.setBacklight(255);
   lcd.begin(20, 4);
-  lcd.println("R140 Commander");
+  lcd.setCursor(3, 1);
+  lcd.print("R140 Commander");
 }
 
 // główny program
