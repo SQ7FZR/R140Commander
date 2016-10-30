@@ -17,26 +17,25 @@
 #include <LiquidCrystal_PCF8574.h>
 #include <Encoder.h>
 
-uint8_t m_addr = 0x3F;
-
 // initialize the library with the numbers of the interface pins
 LiquidCrystal_PCF8574 lcd(m_addr);
 Encoder myEnc(2,3);
 
 // konfiguracja
-const int pulses_for_groove = 2;                        //ilość impulsów na ząbek enkodera zmienić w zależności od posiadanego egzemplarza
-const int set_band_interval = 3000;                     //ilość msec do zmiany pasma
+const int pulses_for_groove = 2;                        // ilość impulsów na ząbek enkodera zmienić w zależności od posiadanego egzemplarza
+const int set_band_interval = 3000;                     // ilość msec do zmiany pasma
+uint8_t m_addr = 0x3F;                                  // adres lcd
 
 // definicje wejsc wyjsc
-const int band_160m = 4;                                //1 fizyczne wyjscie dla pasm
-const int band_80m = 5;                                 //2
-const int band_40m = 6;                                 //3                                 
-const int band_30m = 7;                                 //4
-const int band_20m = 8;                                 //5
-const int band_17m = 9;                                 //6
-const int band_15m = 10;                                //7
-const int band_12m = 11;                                //8
-const int band_10m = 12;                                //9
+const int band_160m = 4;                                // 1 fizyczne wyjscie dla pasm
+const int band_80m = 5;                                 // 2
+const int band_40m = 6;                                 // 3                                 
+const int band_30m = 7;                                 // 4
+const int band_20m = 8;                                 // 5
+const int band_17m = 9;                                 // 6
+const int band_15m = 10;                                // 7
+const int band_12m = 11;                                // 8
+const int band_10m = 12;                                // 9
 const int amp_wentilator = 0;
 const int amp_power = 0;
 const int amp_hivoltage = 0;
@@ -46,10 +45,11 @@ int current_band = 1;                                   // ustawiane pasmo
 int current_set_band = 1;                               // aktualnie ustawione pasmo
 int last_band = 1;
 int current_state = 1;                                  // tryb pracy 
-int last_tmp = 0;                                        //zmienna pomocnicza do liczenia impulsów z enkodera 
-int enc_sum = 0;                                        //zmienna pomocnicza do liczenia impulsów z enkodera
-unsigned long time_to_set_band = 0;                     //
+int last_tmp = 0;                                       // zmienna pomocnicza do liczenia impulsów z enkodera 
+int enc_sum = 0;                                        // zmienna pomocnicza do liczenia impulsów z enkodera
+unsigned long time_to_set_band = 0;                     // czas zwłoki do ustawienia pasma
 //************************************************************************************************//
+
 // funkcje pomocnicze
 void init_lcd(){
   lcd.setCursor(0, 0);
@@ -210,8 +210,6 @@ void set_new_band(){
   lcd.setCursor(9,2);
   lcd.print("OK");
   delay(1000);
-  //lcd.setCursor(15,1);
-  //lcd.print("    ");
   lcd.setCursor(9,2);
   lcd.print("  ");
 }
@@ -258,15 +256,15 @@ void setup(){
   pinMode(band_15m,OUTPUT);
   pinMode(band_12m,OUTPUT);
   pinMode(band_10m,OUTPUT);
-      digitalWrite(band_160m,HIGH);
-      digitalWrite(band_80m,HIGH);
-      digitalWrite(band_40m,HIGH);
-      digitalWrite(band_30m,HIGH);
-      digitalWrite(band_20m,HIGH);
-      digitalWrite(band_17m,HIGH);
-      digitalWrite(band_15m,HIGH);
-      digitalWrite(band_12m,HIGH);
-      digitalWrite(band_10m,HIGH);  
+  digitalWrite(band_160m,HIGH);
+  digitalWrite(band_80m,HIGH);
+  digitalWrite(band_40m,HIGH);
+  digitalWrite(band_30m,HIGH);
+  digitalWrite(band_20m,HIGH);
+  digitalWrite(band_17m,HIGH);
+  digitalWrite(band_15m,HIGH);
+  digitalWrite(band_12m,HIGH);
+  digitalWrite(band_10m,HIGH);  
   //Serial.begin(9600);
   Wire.begin();
   lcd.setBacklight(255);
@@ -282,7 +280,6 @@ void setup(){
   digitalWrite(band_160m,LOW); //set default band
 }
 
-
 // główny program
 void loop(){
   encoder_go();
@@ -291,4 +288,3 @@ void loop(){
     current_set_band = current_band;
   }
 }
-
