@@ -6,13 +6,12 @@
  * 2016.10.29 - obsługa lcd i2c, sterowanie przekaznikami, encoder wersja beta dzialajaca
  * 2016.08.21 - dodanie obsługi lcd po I2C    
  * 2016.08.04 - initialcode
- * 
  */ 
 //************************************************************************************************//
 // zmienne i definicje
-#define sv_version  1.3
-//#define DEBUG
-//#define ENCODER_DO_NOT_USE_INTERRUPTS
+#define sv_version  1.3                                 // wersja softu
+//#define DEBUG                                         // debugowanie skryptu
+//#define ENCODER_DO_NOT_USE_INTERRUPTS                 // przelaczenie enkodera w tryb bez przerwań
 
 // biblioteki i inicjalizacje
 #include <Wire.h>                                       // biblioteka i2c
@@ -59,16 +58,16 @@ Encoder myEnc(4,5);                                     // inicjalizuje enkoder
 void init_lcd(){                                        //
   lcd.setCursor(0, 0);                                  //
   lcd.print("WYBRANE PASMO:");                          //
-  lcd.setCursor(15,0);                                  //
+  lcd.setCursor(16,0);                                  //
   lcd.print("----");                                    //
   lcd.setCursor(0,1);                                   //
   lcd.print("USTAW:");                                  //
-  lcd.setCursor(15,1);                                  //
+  lcd.setCursor(16,1);                                  //
   lcd.print("----");                                    //
 }
 
 void ustaw_lcd(){
-  lcd.setCursor(15,1);
+  lcd.setCursor(16,1);
   switch(current_band){
     case 0:
      lcd.print("----");
@@ -107,7 +106,7 @@ void set_new_band(){
   lcd.setCursor(5,2);
   lcd.print("    OK    ");
   delay(500);  
-  lcd.setCursor(15,0);
+  lcd.setCursor(16,0);
   switch(current_band){
     case 0:
       lcd.print("----");
@@ -237,7 +236,7 @@ void set_new_band(){
 void encoder_go(){
   int tmp = myEnc.read();
   //int enc = 0;
-  if (tmp != last_tmp) {
+  if (tmp != last_tmp){
     if (tmp < last_tmp){
       enc_sum--;
     }
@@ -245,7 +244,6 @@ void encoder_go(){
       enc_sum++;
     }
     last_tmp = tmp; 
-    
     if(enc_sum >= pulses_for_groove && current_band < 9){
       current_band++;
       enc_sum = 0;                                              //reset zmiennej zliczającej impulsy enkodera
@@ -255,9 +253,9 @@ void encoder_go(){
       enc_sum = 0;                                              //reset zmiennej zliczającej impulsy enkodera
     }  
     if(last_band != current_band){       
-       ustaw_lcd(); 
-       last_band = current_band; 
-       time_to_set_band = millis() + set_band_interval;    
+      ustaw_lcd(); 
+      last_band = current_band; 
+      time_to_set_band = millis() + set_band_interval;    
     }    
   }   
 }
@@ -288,7 +286,7 @@ void set_zero(){
   digitalWrite(band_10m,HIGH);    
   lcd.setCursor(5,2);
   lcd.print("          ");  
-  lcd.setCursor(15,0);
+  lcd.setCursor(16,0);
   lcd.print("----");
 }
 
@@ -313,7 +311,6 @@ void setup(){
   digitalWrite(band_15m,HIGH);
   digitalWrite(band_12m,HIGH);
   digitalWrite(band_10m,HIGH);  
-  //Serial.begin(9600);
   Wire.begin();
   lcd.setBacklight(255);
   lcd.begin(20, 4);
@@ -340,12 +337,13 @@ void loop(){
       time_to_reset_relay = millis() + resetting_relay_time;
       reset_flag = 1;     
     }else{
-      current_set_band = current_band;
-      set_zero();  
+      set_zero();
+      current_set_band = current_band;  
       reset_flag = 0;   
     }
   }
   if(millis() >= time_to_reset_relay && reset_flag == 1){
+    current_set_band = current_band;
     reset_relay();  
     reset_flag = 0;
   }
