@@ -2,6 +2,7 @@
  * 
  * 
  * CHANGELOG 
+ * 2016.10.31 - poprawki w sterowaniu przekaznikami, reset przekaznikow po czasie, kosmetyka lcd, czyszczenie kodu
  * 2016.10.29 - obsługa lcd i2c, sterowanie przekaznikami, encoder wersja beta dzialajaca
  * 2016.08.21 - dodanie obsługi lcd po I2C    
  * 2016.08.04 - initialcode
@@ -9,16 +10,17 @@
  */ 
 //************************************************************************************************//
 // zmienne i definicje
-#define DEBUG
+#define sv_version  1.3
+//#define DEBUG
 //#define ENCODER_DO_NOT_USE_INTERRUPTS
 
 // biblioteki i inicjalizacje
-#include <Wire.h>
-#include <LiquidCrystal_PCF8574.h>
-#include <Encoder.h>
+#include <Wire.h>                                       // biblioteka i2c
+#include <LiquidCrystal_PCF8574.h>                      // biblioteka lcd po i2c
+#include <Encoder.h>                                    // biblioteka encodera
 
 // konfiguracja
-uint8_t m_addr = 0x3F;                                  // adres lcd
+uint8_t m_addr = 0x3F;                                  // adres lcd, wykminione skanerem
 const int pulses_for_groove = 2;                        // ilość impulsów na ząbek enkodera zmienić w zależności od posiadanego egzemplarza
 const int set_band_interval = 3000;                     // ilość msec do zmiany pasma
 const unsigned long resetting_relay_time = 15000;       // czas resetu przekaznika po zestrojeniu wzmacniacza
@@ -33,36 +35,36 @@ const int band_17m = 9;                                 // wyjście D9 pasmo 6
 const int band_15m = 10;                                // wyjście D10 pasmo 7
 const int band_12m = 11;                                // wyjście D11 pasmo 8
 const int band_10m = 12;                                // wyjście D12 pasmo 9
-const int amp_wentilator = 0;
-const int amp_power = 0;
-const int amp_hivoltage = 0;
+const int amp_wentilator = 0;                           // sterowanie wentylatorem
+const int amp_power = 0;                                // sterowanie zasilaniem wzmacniacza
+const int amp_hivoltage = 0;                            // sterowanie wysokim napięciem
 
 // zmienne pomocnicze
 int current_band = 0;                                   // ustawiane pasmo
 int current_set_band = 0;                               // aktualnie ustawione pasmo
-int last_band = 0;                                      //
+int last_band = 0;                                      // poprzednie pasmo
 int current_state = 0;                                  // tryb pracy 
 int last_tmp = 0;                                       // zmienna pomocnicza do liczenia impulsów z enkodera 
 int enc_sum = 0;                                        // zmienna pomocnicza do liczenia impulsów z enkodera
-int reset_flag = 0;                                     //
-unsigned long time_to_set_band = 0;                     //
+int reset_flag = 0;                                     // flaga wymuszania resetu przekaznikow
+unsigned long time_to_set_band = 0;                     // 
 unsigned long time_to_reset_relay = 0;                  //
 
 //inicjalizacja
-LiquidCrystal_PCF8574 lcd(m_addr);
-Encoder myEnc(4,5);
+LiquidCrystal_PCF8574 lcd(m_addr);                      // inicjalizuje lcd 
+Encoder myEnc(4,5);                                     // inicjalizuje enkoder
 
 //************************************************************************************************//
 // funkcje pomocnicze
-void init_lcd(){
-  lcd.setCursor(0, 0);
-  lcd.print("WYBRANE PASMO:");
-  lcd.setCursor(15,0); 
-  lcd.print("----");
-  lcd.setCursor(0,1);
-  lcd.print("USTAW:");
-  lcd.setCursor(15,1);
-  lcd.print("----");
+void init_lcd(){                                        //
+  lcd.setCursor(0, 0);                                  //
+  lcd.print("WYBRANE PASMO:");                          //
+  lcd.setCursor(15,0);                                  //
+  lcd.print("----");                                    //
+  lcd.setCursor(0,1);                                   //
+  lcd.print("USTAW:");                                  //
+  lcd.setCursor(15,1);                                  //
+  lcd.print("----");                                    //
 }
 
 void ustaw_lcd(){
@@ -102,6 +104,9 @@ void ustaw_lcd(){
 }
 
 void set_new_band(){
+  lcd.setCursor(5,2);
+  lcd.print("    OK    ");
+  delay(500);  
   lcd.setCursor(15,0);
   switch(current_band){
     case 0:
@@ -226,11 +231,6 @@ void set_new_band(){
     break;                        
   }
   lcd.setCursor(5,2);
-  lcd.print("    OK    ");
-  delay(500);
-  //lcd.setCursor(15,1);
-  //lcd.print("    ");
-  lcd.setCursor(5,2);
   lcd.print("STROJENIE ");
 }
 
@@ -248,18 +248,17 @@ void encoder_go(){
     
     if(enc_sum >= pulses_for_groove && current_band < 9){
       current_band++;
-      enc_sum = 0;                          //reset zmiennej zliczającej impulsy enkodera
+      enc_sum = 0;                                              //reset zmiennej zliczającej impulsy enkodera
     }
     if(enc_sum <= -(pulses_for_groove) && current_band > 0){
       current_band--;
-      enc_sum = 0;                          //reset zmiennej zliczającej impulsy enkodera
+      enc_sum = 0;                                              //reset zmiennej zliczającej impulsy enkodera
     }  
     if(last_band != current_band){       
        ustaw_lcd(); 
        last_band = current_band; 
        time_to_set_band = millis() + set_band_interval;    
     }    
-    //delayMicroseconds(10);                   //małe opóźnienie dla prawidłowego działania enkodera
   }   
 }
 
@@ -320,6 +319,9 @@ void setup(){
   lcd.begin(20, 4);
   lcd.setCursor(3, 1);
   lcd.print("R140 Commander");
+  lcd.setCursor(14,3);
+  lcd.print("v.");
+  lcd.print(sv_version);
   lcd.setCursor(0,3);
   delay(1000);
   lcd.print("booting...");
