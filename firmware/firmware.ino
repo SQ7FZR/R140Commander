@@ -2,6 +2,7 @@
  * 
  * 
  * CHANGELOG 
+ * 2016.11.01 - zmiana pinow enkodera i jednego z pasm
  * 2016.10.31 - poprawki w sterowaniu przekaznikami, reset przekaznikow po czasie, kosmetyka lcd, czyszczenie kodu
  * 2016.10.29 - obsługa lcd i2c, sterowanie przekaznikami, encoder wersja beta dzialajaca
  * 2016.08.21 - dodanie obsługi lcd po I2C    
@@ -9,7 +10,7 @@
  */ 
 //************************************************************************************************//
 // zmienne i definicje
-#define sv_version  1.3                                 // wersja softu
+#define sv_version  1.31                                // wersja softu
 //#define DEBUG                                         // debugowanie skryptu
 //#define ENCODER_DO_NOT_USE_INTERRUPTS                 // przelaczenie enkodera w tryb bez przerwań
 
@@ -27,7 +28,7 @@ const unsigned long resetting_relay_time = 15000;       // czas resetu przekazni
 // definicje wejsc wyjsc
 const int band_160m = 2;                                // wyjście D2 pasmo 1 fizyczne wyjscie dla pasm
 const int band_80m = 3;                                 // wyjście D3 pasmo 2
-const int band_40m = 6;                                 // wyjście D6 pasmo 3                                 
+const int band_40m = 4;                                 // wyjście D6 pasmo 3                                 
 const int band_30m = 7;                                 // wyjście D7 pasmo 4
 const int band_20m = 8;                                 // wyjście D8 pasmo 5
 const int band_17m = 9;                                 // wyjście D9 pasmo 6
@@ -51,7 +52,7 @@ unsigned long time_to_reset_relay = 0;                  //
 
 //inicjalizacja
 LiquidCrystal_PCF8574 lcd(m_addr);                      // inicjalizuje lcd 
-Encoder myEnc(4,5);                                     // inicjalizuje enkoder
+Encoder myEnc(5,6);                                     // inicjalizuje enkoder
 
 //************************************************************************************************//
 // funkcje pomocnicze
