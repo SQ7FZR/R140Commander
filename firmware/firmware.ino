@@ -1,18 +1,40 @@
 /* R140Commander @ SQ9MDD 2016
  * 
+ * Obsługa przycisków funkcyjnych:
+ * Dzielnik napiecia: +5V - 10K - A3 - 1K - 1K - 1K ... NK
+ *                                |     |    |    |
+ *                                P1    P2   P3   P4
+ *                                |     |    |    |
+ *                                GND   GND  GND  GND
+ *                                
+ * przycisk - wartość na przetworniku:
+ * P1   -   0     
+ * P2   -   93
+ * P3   -   170
+ * P4   -   237
  * 
  * CHANGELOG 
+ * 2016.11.06 - v.1.40 dodanie obsługi przycisków (na razie tylko pomiar, flagi i obsługa On/Off wentylatora)
  * 2016.11.01 - zmiana pinow enkodera i jednego z pasm
  * 2016.10.31 - poprawki w sterowaniu przekaznikami, reset przekaznikow po czasie, kosmetyka lcd, czyszczenie kodu
  * 2016.10.29 - obsługa lcd i2c, sterowanie przekaznikami, encoder wersja beta dzialajaca
  * 2016.08.21 - dodanie obsługi lcd po I2C    
  * 2016.08.04 - initialcode
+ * 
+ * ROADMAP
+ *  - obsługa automatycznej zmiany pasm po podłączeniu do TRX
+ *  - obsługa rozruchu i wyłączenia wzmacniacza
+ *  - obsługa sterowania wysokim napięciem
+ *  + obsługa sterowania wentylatorem
+ *  + obsługa zmiany pasm
+ *  + obsuga LCD z I2C
  */ 
 //************************************************************************************************//
 // zmienne i definicje
-#define sv_version  1.31                                // wersja softu
+#define sv_version  1.40                                // wersja softu
 //#define DEBUG                                         // debugowanie skryptu
 //#define ENCODER_DO_NOT_USE_INTERRUPTS                 // przelaczenie enkodera w tryb bez przerwań
+//#define CIV_COMM                                      // sterowanie po protokole CIV
 
 // biblioteki i inicjalizacje
 #include <Wire.h>                                       // biblioteka i2c
@@ -28,16 +50,19 @@ const unsigned long resetting_relay_time = 15000;       // czas resetu przekazni
 // definicje wejsc wyjsc
 const int band_160m = 2;                                // wyjście D2 pasmo 1 fizyczne wyjscie dla pasm
 const int band_80m = 3;                                 // wyjście D3 pasmo 2
-const int band_40m = 4;                                 // wyjście D6 pasmo 3                                 
+const int band_40m = 4;                                 // wyjście D4 pasmo 3                                 
 const int band_30m = 7;                                 // wyjście D7 pasmo 4
 const int band_20m = 8;                                 // wyjście D8 pasmo 5
 const int band_17m = 9;                                 // wyjście D9 pasmo 6
 const int band_15m = 10;                                // wyjście D10 pasmo 7
 const int band_12m = 11;                                // wyjście D11 pasmo 8
 const int band_10m = 12;                                // wyjście D12 pasmo 9
-const int amp_wentilator = 0;                           // sterowanie wentylatorem
-const int amp_power = 0;                                // sterowanie zasilaniem wzmacniacza
-const int amp_hivoltage = 0;                            // sterowanie wysokim napięciem
+const int amp_wentilator = A0;                          // sterowanie wentylatorem
+const int amp_power = A1;                               // sterowanie zasilaniem wzmacniacza
+const int amp_hivoltage = A2;                           // sterowanie wysokim napięciem
+const int button_in =  A3;                              // wejscie dla klawiszy funkcyjnych
+// A4 - LCD
+// A5 - LCD
 
 // zmienne pomocnicze
 int current_band = 0;                                   // ustawiane pasmo
@@ -47,6 +72,9 @@ int current_state = 0;                                  // tryb pracy
 int last_tmp = 0;                                       // zmienna pomocnicza do liczenia impulsów z enkodera 
 int enc_sum = 0;                                        // zmienna pomocnicza do liczenia impulsów z enkodera
 int reset_flag = 0;                                     // flaga wymuszania resetu przekaznikow
+boolean amp_wentilator_flag = false;                    // flaga wentylatora
+boolean amp_power_flag = false;                         // flaga zalaczenia zasilania wzmacniacza
+boolean amp_hivoltage_flag = false;                     // flaga zalaczenia wysokiego napięcia
 unsigned long time_to_set_band = 0;                     // 
 unsigned long time_to_reset_relay = 0;                  //
 
@@ -65,6 +93,8 @@ void init_lcd(){                                        //
   lcd.print("USTAW:");                                  //
   lcd.setCursor(16,1);                                  //
   lcd.print("----");                                    //
+  lcd.setCursor(0,3);
+  lcd.print("Wen OFF");
 }
 
 void ustaw_lcd(){
@@ -291,6 +321,28 @@ void set_zero(){
   lcd.print("----");
 }
 
+void read_buttons(){
+  int buttons_val = analogRead(button_in);                              // czytamy co tam na przyciskach
+  if(buttons_val < 10){                                                 // pierwszy klawisz całkiem na mase wentylator
+    amp_wentilator_flag = !amp_wentilator_flag;                         // zmieniam flage stanu
+    set_func();                                                         // wyzwalam zmianę 
+    delay(250);                                                         // opozninie musi byc po nacisnieciu klawisza 
+  }
+
+}
+
+void set_func(){
+  if(amp_wentilator_flag){
+    digitalWrite(amp_wentilator,LOW);
+    lcd.setCursor(0,3);
+    lcd.print("Wen ON ");
+  }else{
+    digitalWrite(amp_wentilator,HIGH);
+    lcd.setCursor(0,3);
+    lcd.print("Wen OFF");    
+  }
+}
+
 //************************************************************************************************//
 // odpalamy przy starcie
 void setup(){
@@ -303,6 +355,9 @@ void setup(){
   pinMode(band_15m,OUTPUT);
   pinMode(band_12m,OUTPUT);
   pinMode(band_10m,OUTPUT);
+  pinMode(button_in,INPUT);
+  pinMode(amp_wentilator,OUTPUT);
+  
   digitalWrite(band_160m,HIGH);
   digitalWrite(band_80m,HIGH);
   digitalWrite(band_40m,HIGH);
@@ -311,7 +366,9 @@ void setup(){
   digitalWrite(band_17m,HIGH);
   digitalWrite(band_15m,HIGH);
   digitalWrite(band_12m,HIGH);
-  digitalWrite(band_10m,HIGH);  
+  digitalWrite(band_10m,HIGH);
+  digitalWrite(amp_wentilator,HIGH);
+    
   Wire.begin();
   lcd.setBacklight(255);
   lcd.begin(20, 4);
@@ -326,10 +383,15 @@ void setup(){
   delay(3000);
   lcd.clear();
   init_lcd();
+  #ifdef DEBUG
+    Serial.begin(9600);
+    Serial.println("debug mode");
+  #endif
 }
 
 // główny program
 void loop(){
+  read_buttons();
   encoder_go();
   if(current_set_band != current_band && millis() >= time_to_set_band){
     if(current_band != 0){
